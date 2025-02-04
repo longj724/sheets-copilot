@@ -1,4 +1,5 @@
 "use client";
+
 // External Dependencies
 import React from "react";
 import {
@@ -9,13 +10,16 @@ import {
   Check,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 
 // Internal Dependencies
-import { Project } from "~/types/project";
+import type { Project } from "~/types/project";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { useCreateProject, useUpdateProject } from "~/hooks/use-projects";
+import {
+  useProjects,
+  useCreateProject,
+  useUpdateProject,
+} from "~/hooks/use-projects";
 import { cn } from "~/lib/utils";
 
 interface SidebarProps {
@@ -29,17 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingName, setEditingName] = React.useState("");
 
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ["projects"],
-    queryFn: async () => {
-      const response = await fetch("/api/projects");
-      if (!response.ok) {
-        throw new Error("Failed to fetch projects");
-      }
-      const data = await response.json();
-      return data as Project[];
-    },
-  });
+  const { data: projects = [] } = useProjects();
 
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();

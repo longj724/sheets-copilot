@@ -14,6 +14,12 @@ importers:
       '@google-cloud/local-auth':
         specifier: ^2.1.0
         version: 2.1.0
+      '@hono/clerk-auth':
+        specifier: ^2.0.0
+        version: 2.0.0(@clerk/backend@1.23.11(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(hono@4.6.20)
+      '@hono/zod-validator':
+        specifier: ^0.4.2
+        version: 0.4.2(hono@4.6.20)(zod@3.24.1)
       '@radix-ui/react-slot':
         specifier: ^1.1.1
         version: 1.1.1(@types/react@18.3.18)(react@18.3.1)
@@ -38,6 +44,9 @@ importers:
       googleapis:
         specifier: ^105.0.0
         version: 105.0.0
+      hono:
+        specifier: ^4.6.20
+        version: 4.6.20
       lucide-react:
         specifier: ^0.474.0
         version: 0.474.0(react@18.3.1)
@@ -464,6 +473,19 @@ packages:
   '@google-cloud/local-auth@2.1.0':
     resolution: {integrity: sha512-ymZ1XuyKcRcro0aiMYz3hVGbZ+QZmN5V1Eyjvw2k1xqq76PwmDer0DIPxdxkLzfW9Inr8+g+MS9t9fZ7dOlTOQ==}
     engines: {node: '>=12.0.0'}
+
+  '@hono/clerk-auth@2.0.0':
+    resolution: {integrity: sha512-ad+U8jDlBPgXBTv8BRnPrSFC/uX8U0ojiCR77I3WWHm5I9L3/bHsZpQ2lgvLTV3YbJyVmAdKJArEAQiPjodGdA==}
+    engines: {node: '>=16.x.x'}
+    peerDependencies:
+      '@clerk/backend': ^1.0.0
+      hono: '>=3.*'
+
+  '@hono/zod-validator@0.4.2':
+    resolution: {integrity: sha512-1rrlBg+EpDPhzOV4hT9pxr5+xDVmKuz6YJl+la7VCwK6ass5ldyKm5fD+umJdV2zhHD6jROoCCv8NbTwyfhT0g==}
+    peerDependencies:
+      hono: '>=3.9.0'
+      zod: ^3.19.1
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -1565,6 +1587,10 @@ packages:
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
+
+  hono@4.6.20:
+    resolution: {integrity: sha512-5qfNQeaIptMaJKyoJ6N/q4gIq0DBp2FCRaLNuUI3LlJKL4S37DY/rLL1uAxA4wrPB39tJ3s+f7kgI79O4ScSug==}
+    engines: {node: '>=16.9.0'}
 
   https-proxy-agent@5.0.1:
     resolution: {integrity: sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==}
@@ -2797,6 +2823,16 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+
+  '@hono/clerk-auth@2.0.0(@clerk/backend@1.23.11(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(hono@4.6.20)':
+    dependencies:
+      '@clerk/backend': 1.23.11(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      hono: 4.6.20
+
+  '@hono/zod-validator@0.4.2(hono@4.6.20)(zod@3.24.1)':
+    dependencies:
+      hono: 4.6.20
+      zod: 3.24.1
 
   '@humanwhocodes/config-array@0.13.0':
     dependencies:
@@ -4042,6 +4078,8 @@ snapshots:
   hasown@2.0.2:
     dependencies:
       function-bind: 1.1.2
+
+  hono@4.6.20: {}
 
   https-proxy-agent@5.0.1:
     dependencies:

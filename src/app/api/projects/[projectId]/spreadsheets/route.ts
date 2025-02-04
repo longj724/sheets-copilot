@@ -1,12 +1,24 @@
-import { NextResponse } from "next/server";
+// External Dependencies
 import { db } from "~/server/db";
 import { projectSpreadsheets } from "~/server/db/schema";
+
+// Internal Dependencies
+import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { and, eq} from "drizzle-orm";
+
+const CreateSpreadsheetSchema = z.object({
+  projectId: z.string().min(1, "Project ID is required"),
+  spreadsheetId: z.string().min(1, "Spreadsheet ID is required"),
+  spreadsheetName: z.string().min(1, "Spreadsheet name is required"),
+  accessToken: z.string().min(1, "Access token is required"),
+  refreshToken: z.string().optional(),
+  tokenExpiryDate: z.string().datetime().optional(),
+});
 
 export async function POST(
   request: Request,
-  { params }: { params: { projectId: string } }
 ) {
   try {
     const { userId } = await auth();
@@ -14,22 +26,18 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { spreadsheetId, spreadsheetName, accessToken, refreshToken, tokenExpiryDate } = await request.json();
+    const body = await request.json() as z.infer<typeof CreateSpreadsheetSchema>;
+    const validatedData = CreateSpreadsheetSchema.parse(body);
 
-    // Validate required fields
-    if (!spreadsheetId || !spreadsheetName || !accessToken) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Check if spreadsheet already exists for this project
     const existingSpreadsheet = await db
       .select()
       .from(projectSpreadsheets)
-      .where(eq(projectSpreadsheets.projectId, params.projectId))
-      .where(eq(projectSpreadsheets.spreadsheetId, spreadsheetId));
+      .where(
+        and(
+          eq(projectSpreadsheets.projectId, validatedData.projectId),
+          eq(projectSpreadsheets.spreadsheetId, validatedData.spreadsheetId)
+        )
+      );
 
     if (existingSpreadsheet.length > 0) {
       return NextResponse.json(
@@ -38,25 +46,39 @@ export async function POST(
       );
     }
 
-    // Save the spreadsheet
     const [spreadsheet] = await db
       .insert(projectSpreadsheets)
       .values({
-        projectId: params.projectId,
-        spreadsheetId,
-        spreadsheetName,
-        accessToken,
-        refreshToken,
-        tokenExpiryDate: tokenExpiryDate ? new Date(tokenExpiryDate as string) : null,
+        projectId: validatedData.projectId,
+        spreadsheetId: validatedData.spreadsheetId,
+        spreadsheetName: validatedData.spreadsheetName,
+        accessToken: validatedData.accessToken,
+        refreshToken: validatedData.refreshToken ?? null,
+        tokenExpiryDate: validatedData.tokenExpiryDate 
+          ? new Date(validatedData.tokenExpiryDate) 
+          : null,
       })
       .returning();
 
     return NextResponse.json(spreadsheet);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          error: "Validation Failed", 
+          details: error.errors.map(err => ({
+            path: err.path.join('.'),
+            message: err.message
+          }))
+        }, 
+        { status: 400 }
+      );
+    }
+
     console.error("Error saving spreadsheet:", error);
     return NextResponse.json(
       { error: "Failed to save spreadsheet" },
       { status: 500 }
     );
   }
-} 
+}

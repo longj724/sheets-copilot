@@ -5,23 +5,15 @@ import { projects } from "~/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
-const routeContextSchema = z.object({
-  params: z.object({
-    projectId: z.string(),
-  }),
-});
-
 const updateProjectSchema = z.object({
+  projectId: z.string().min(1),
   name: z.string().min(1),
 });
 
 export async function PATCH(
-  req: Request,
-  context: z.infer<typeof routeContextSchema>
+  req: Request
 ) {
   try {
-    // Validate route params
-    const { params } = routeContextSchema.parse(context);
 
     // Check authentication
     const { userId } = await auth();
@@ -29,9 +21,8 @@ export async function PATCH(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Parse request body
-    const json = await req.json();
-    const body = updateProjectSchema.parse(json);
+    const body = await req.json() as z.infer<typeof updateProjectSchema>;
+    const validatedData = updateProjectSchema.parse(body);
 
     // Update project
     const updatedProject = await db
@@ -42,7 +33,7 @@ export async function PATCH(
       })
       .where(
         and(
-          eq(projects.id, params.projectId),
+          eq(projects.id, validatedData.projectId),
           eq(projects.userId, userId)
         )
       )

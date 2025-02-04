@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+// External Dependencies
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -8,6 +9,20 @@ interface Project {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export function useProjects() {
+  return useQuery<Project[]>({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      const response = await fetch("/api/projects");
+      if (!response.ok) {
+        throw new Error("Failed to fetch projects");
+      }
+      const data = (await response.json()) as Project[];
+      return data;
+    },
+  });
 }
 
 export function useCreateProject() {
