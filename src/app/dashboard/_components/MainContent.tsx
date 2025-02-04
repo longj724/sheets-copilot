@@ -26,10 +26,56 @@ interface GoogleAuthSuccessEvent {
   };
 }
 
+interface GooglePickerAction {
+  PICKED: string;
+}
+
+interface GooglePickerViewId {
+  SPREADSHEETS: string;
+}
+
+interface GooglePickerDoc {
+  id: string;
+  name: string;
+}
+
+interface GooglePickerResponse {
+  action: string;
+  docs: GooglePickerDoc[];
+}
+
+interface GooglePickerBuilder {
+  addView: (view: string) => GooglePickerBuilder;
+  setOAuthToken: (token: string) => GooglePickerBuilder;
+  setDeveloperKey: (key: string) => GooglePickerBuilder;
+  setCallback: (
+    callback: (data: GooglePickerResponse) => void,
+  ) => GooglePickerBuilder;
+  build: () => GooglePicker;
+}
+
+interface GooglePicker {
+  setVisible: (visible: boolean) => void;
+}
+
+interface GooglePickerApi {
+  picker: {
+    Action: GooglePickerAction;
+    ViewId: GooglePickerViewId;
+    PickerBuilder: new () => GooglePickerBuilder;
+  };
+}
+
+interface GoogleApi {
+  load: (api: string, callback: () => void) => void;
+}
+
 declare global {
   interface Window {
-    gapi: any;
-    google: any;
+    gapi: GoogleApi;
+    google: {
+      picker: GooglePickerApi["picker"];
+    };
   }
 }
 
@@ -58,18 +104,23 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
     document.body.appendChild(script);
   }, []);
 
-  const createPicker = (accessToken: string) => {
+  const createPicker = (tokens: GoogleAuthSuccessEvent["tokens"]) => {
     const picker = new window.google.picker.PickerBuilder()
       .addView(window.google.picker.ViewId.SPREADSHEETS)
-      .setOAuthToken(accessToken)
+      .setOAuthToken(tokens.accessToken)
       .setDeveloperKey(process.env.NEXT_PUBLIC_GOOGLE_API_KEY!)
-      .setCallback(async (data: any) => {
+      .setCallback((data: GooglePickerResponse) => {
         if (data.action === window.google.picker.Action.PICKED) {
           const sheet = data.docs[0];
-          await handleSaveSpreadsheet({
-            id: sheet.id,
-            name: sheet.name,
-          });
+          if (sheet) {
+            void handleSaveSpreadsheet(
+              {
+                id: sheet.id,
+                name: sheet.name,
+              },
+              tokens,
+            );
+          }
         }
       })
       .build();
@@ -81,6 +132,8 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
       setIsConnecting(true);
       const response = await fetch("/api/auth/google");
       const data = (await response.json()) as GoogleAuthResponse;
+
+      console.log("data in connect sheet is", data);
 
       if (data.url) {
         // Open Google auth in a popup
@@ -95,6 +148,7 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
           "message",
           (event: MessageEvent<GoogleAuthSuccessEvent>) => {
             if (event.data?.type === "GOOGLE_AUTH_SUCCESS") {
+              console.log("setting auth tokens", event.data.tokens);
               setAuthTokens(event.data.tokens);
               if (popup) popup.close();
 
@@ -104,7 +158,7 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
               document.body.appendChild(script);
 
               // Create and show the picker
-              createPicker(event.data.tokens.accessToken);
+              createPicker(event.data.tokens);
             }
           },
         );
@@ -116,8 +170,14 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
     }
   };
 
-  const handleSaveSpreadsheet = async (sheet: GoogleSheet) => {
-    if (!projectId || !authTokens) return;
+  const handleSaveSpreadsheet = async (
+    sheet: GoogleSheet,
+    tokens: GoogleAuthSuccessEvent["tokens"],
+  ) => {
+    console.log("handleSaveSpreadsheet", sheet);
+    console.log("tokens", tokens);
+    console.log("projectId", projectId);
+    if (!projectId || !tokens) return;
 
     try {
       setIsSaving(true);
@@ -127,11 +187,12 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          projectId,
           spreadsheetId: sheet.id,
           spreadsheetName: sheet.name,
-          accessToken: authTokens.accessToken,
-          refreshToken: authTokens.refreshToken,
-          tokenExpiryDate: authTokens.expiryDate,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          tokenExpiryDate: tokens.expiryDate,
         }),
       });
 
