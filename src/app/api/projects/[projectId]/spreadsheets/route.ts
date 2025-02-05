@@ -17,6 +17,56 @@ const CreateSpreadsheetSchema = z.object({
   tokenExpiryDate: z.number().optional(),
 });
 
+// Add this type for the response
+export type SpreadsheetResponse = {
+  id: string;
+  projectId: string;
+  spreadsheetId: string;
+  spreadsheetName: string;
+  accessToken: string;
+  refreshToken: string | null;
+  tokenExpiryDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export async function GET(
+  request: Request,
+  { params }: { params: { projectId: string } }
+) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { projectId } = params;
+
+    if (!projectId) {
+      return NextResponse.json(
+        { error: "Project ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const spreadsheets = await db
+      .select()
+      .from(projectSpreadsheets)
+      .where(eq(projectSpreadsheets.projectId, projectId))
+      .orderBy(projectSpreadsheets.createdAt);
+
+    // Return all spreadsheets (or empty array if none found)
+    return NextResponse.json(spreadsheets);
+
+  } catch (error) {
+    console.error("Error fetching spreadsheets:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch spreadsheets" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(
   request: Request,
 ) {

@@ -3,6 +3,10 @@
 // External Dependencies
 import React, { useState, useEffect } from "react";
 import { Table, ArrowRight, Loader2 } from "lucide-react";
+import { EmbeddedSpreadsheet } from "./EmbeddedSpreadsheet";
+import { useSpreadsheet } from "~/hooks/use-spreadsheet";
+import type { SpreadsheetResponse } from "~/app/api/projects/[projectId]/spreadsheets/route";
+import { SpreadsheetSelector } from "./SpreadsheetSelector";
 
 interface MainContentProps {
   projectId?: string;
@@ -85,12 +89,22 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
   const [authTokens, setAuthTokens] = useState<
     GoogleAuthSuccessEvent["tokens"] | null
   >(null);
+  const [connectedSheet, setConnectedSheet] =
+    useState<SpreadsheetResponse | null>(null);
 
   const suggestions = [
     "Analyze the trends in my sales data",
     "Create a summary of my monthly revenue",
     "Find outliers in my customer data",
   ];
+
+  const { data: spreadsheets = [] } = useSpreadsheet(projectId ?? "");
+
+  useEffect(() => {
+    if (spreadsheets.length > 0 && !connectedSheet) {
+      setConnectedSheet(spreadsheets[0]);
+    }
+  }, [spreadsheets, connectedSheet]);
 
   useEffect(() => {
     // Load the Google Picker API
@@ -170,6 +184,19 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
     }
   };
 
+  const handleSpreadsheetChange = (spreadsheetId: string) => {
+    const selected = spreadsheets.find(
+      (sheet) => sheet.spreadsheetId === spreadsheetId,
+    );
+    if (selected) {
+      setConnectedSheet(selected);
+    }
+  };
+
+  const handleAddSpreadsheet = () => {
+    void handleConnectSheet();
+  };
+
   const handleSaveSpreadsheet = async (
     sheet: GoogleSheet,
     tokens: GoogleAuthSuccessEvent["tokens"],
@@ -204,7 +231,8 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
         throw new Error("Failed to save spreadsheet");
       }
 
-      // Clear the auth tokens after saving
+      const savedSpreadsheet = await response.json();
+      setConnectedSheet(savedSpreadsheet);
       setAuthTokens(null);
     } catch (error) {
       console.error("Error saving spreadsheet:", error);
@@ -216,33 +244,52 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
   return (
     <div className="flex h-screen flex-1">
       {/* Left Panel - Spreadsheet View */}
-      <div className="flex w-1/2 border-r">
-        <div className="flex flex-1 flex-col items-center justify-center p-8">
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 p-8">
-            <Table className="mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="text-xl font-semibold">Connect a Google Sheet</h3>
-            <p className="mb-4 text-center text-gray-500">
-              Connect your Google Sheet to start analyzing and chatting with
-              your data
-            </p>
-            <button
-              onClick={handleConnectSheet}
-              disabled={isConnecting || isSaving}
-              className="flex items-center gap-2 rounded-md bg-[#0f172a] px-4 py-2 text-white disabled:opacity-50"
-            >
-              {isConnecting || isSaving ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Table className="h-5 w-5" />
+      <div className="flex w-1/2 flex-col border-r">
+        {spreadsheets.length > 0 ? (
+          <>
+            <SpreadsheetSelector
+              spreadsheets={spreadsheets}
+              selectedSpreadsheet={connectedSheet}
+              onSpreadsheetChange={handleSpreadsheetChange}
+              onAddSpreadsheet={handleAddSpreadsheet}
+            />
+            <div className="h-full w-full">
+              {connectedSheet && (
+                <EmbeddedSpreadsheet
+                  spreadsheetId={connectedSheet.spreadsheetId}
+                  height="100%"
+                />
               )}
-              {isConnecting
-                ? "Connecting..."
-                : isSaving
-                  ? "Saving..."
-                  : "Connect Sheet"}
-            </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center p-8">
+            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 p-8">
+              <Table className="mb-4 h-12 w-12 text-gray-400" />
+              <h3 className="text-xl font-semibold">Connect a Google Sheet</h3>
+              <p className="mb-4 text-center text-gray-500">
+                Connect your Google Sheet to start analyzing and chatting with
+                your data
+              </p>
+              <button
+                onClick={handleConnectSheet}
+                disabled={isConnecting || isSaving}
+                className="flex items-center gap-2 rounded-md bg-[#0f172a] px-4 py-2 text-white disabled:opacity-50"
+              >
+                {isConnecting || isSaving ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Table className="h-5 w-5" />
+                )}
+                {isConnecting
+                  ? "Connecting..."
+                  : isSaving
+                    ? "Saving..."
+                    : "Connect Sheet"}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Right Panel - Chat Interface */}
