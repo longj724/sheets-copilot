@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS "project_spreadsheets" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "projects" (
+CREATE TABLE IF NOT EXISTS "project" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"user_id" text NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS "projects" (
 );
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "project_spreadsheets" ADD CONSTRAINT "project_spreadsheets_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "project_spreadsheets" ADD CONSTRAINT "project_spreadsheets_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

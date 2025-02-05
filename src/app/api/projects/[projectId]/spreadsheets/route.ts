@@ -14,7 +14,7 @@ const CreateSpreadsheetSchema = z.object({
   spreadsheetName: z.string().min(1, "Spreadsheet name is required"),
   accessToken: z.string().min(1, "Access token is required"),
   refreshToken: z.string().optional(),
-  tokenExpiryDate: z.string().datetime().optional(),
+  tokenExpiryDate: z.number().optional(),
 });
 
 export async function POST(

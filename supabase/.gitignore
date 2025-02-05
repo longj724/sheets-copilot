@@ -1,5 +1,8 @@
 # Supabase
 .branches
 .temp
-.env
-.cursorrules
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local

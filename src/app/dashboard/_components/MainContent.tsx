@@ -179,6 +179,17 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
     console.log("projectId", projectId);
     if (!projectId || !tokens) return;
 
+    const body = {
+      projectId,
+      spreadsheetId: sheet.id,
+      spreadsheetName: sheet.name,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      tokenExpiryDate: tokens.expiryDate,
+    };
+
+    console.log("body", body);
+
     try {
       setIsSaving(true);
       const response = await fetch(`/api/projects/${projectId}/spreadsheets`, {
@@ -186,14 +197,7 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          projectId,
-          spreadsheetId: sheet.id,
-          spreadsheetName: sheet.name,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          tokenExpiryDate: tokens.expiryDate,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {

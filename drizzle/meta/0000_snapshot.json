@@ -1,5 +1,5 @@
 {
-  "id": "11c0f2fc-e640-43a9-b3ea-ac6bf24661d3",
+  "id": "0159162e-16b6-4555-96cd-4b44e580f7af",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -67,10 +67,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "project_spreadsheets_project_id_projects_id_fk": {
-          "name": "project_spreadsheets_project_id_projects_id_fk",
+        "project_spreadsheets_project_id_project_id_fk": {
+          "name": "project_spreadsheets_project_id_project_id_fk",
           "tableFrom": "project_spreadsheets",
-          "tableTo": "projects",
+          "tableTo": "project",
           "columnsFrom": [
             "project_id"
           ],
@@ -84,8 +84,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.projects": {
-      "name": "projects",
+    "public.project": {
+      "name": "project",
       "schema": "",
       "columns": {
         "id": {

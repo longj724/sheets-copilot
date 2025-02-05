@@ -10,7 +10,7 @@ import {
 export const projects = pgTable("project", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
-  userId: text("userId").notNull(),
+  userId: text("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -32,7 +32,7 @@ export const projectSpreadsheets = pgTable('project_spreadsheets', {
 });
 
 export const projectSpreadsheetsRelations = relations(projectSpreadsheets, ({ one }) => ({
-  project: one(projects, {
+  projects: one(projects, {
     fields: [projectSpreadsheets.projectId],
     references: [projects.id],
   }),
