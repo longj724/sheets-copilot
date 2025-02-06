@@ -91,6 +91,7 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
   >(null);
   const [connectedSheet, setConnectedSheet] =
     useState<SpreadsheetResponse | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
 
   const suggestions = [
     "Analyze the trends in my sales data",
@@ -118,11 +119,22 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
     document.body.appendChild(script);
   }, []);
 
+  useEffect(() => {
+    const fetchApiKey = async () => {
+      const response = await fetch("/api/projects/google-picker");
+      const data = await response.json();
+      setApiKey(data.apiKey);
+    };
+    void fetchApiKey();
+  }, []);
+
   const createPicker = (tokens: GoogleAuthSuccessEvent["tokens"]) => {
+    if (!apiKey) return;
+
     const picker = new window.google.picker.PickerBuilder()
       .addView(window.google.picker.ViewId.SPREADSHEETS)
       .setOAuthToken(tokens.accessToken)
-      .setDeveloperKey(process.env.NEXT_PUBLIC_GOOGLE_API_KEY!)
+      .setDeveloperKey(apiKey)
       .setCallback((data: GooglePickerResponse) => {
         if (data.action === window.google.picker.Action.PICKED) {
           const sheet = data.docs[0];
