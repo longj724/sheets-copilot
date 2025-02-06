@@ -7,6 +7,7 @@ import { EmbeddedSpreadsheet } from "./EmbeddedSpreadsheet";
 import { useSpreadsheet } from "~/hooks/use-spreadsheet";
 import type { SpreadsheetResponse } from "~/app/api/projects/[projectId]/spreadsheets/route";
 import { SpreadsheetSelector } from "./SpreadsheetSelector";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MainContentProps {
   projectId?: string;
@@ -100,6 +101,8 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
   ];
 
   const { data: spreadsheets = [] } = useSpreadsheet(projectId ?? "");
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (spreadsheets.length > 0 && !connectedSheet) {
@@ -253,6 +256,35 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
     }
   };
 
+  const handleDeleteSpreadsheet = async (spreadsheetId: string) => {
+    if (!projectId || !spreadsheetId) return;
+
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/spreadsheets/${spreadsheetId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete spreadsheet");
+      }
+
+      // If the deleted spreadsheet was the connected one, set it to null
+      if (connectedSheet?.spreadsheetId === spreadsheetId) {
+        setConnectedSheet(null);
+      }
+
+      // Invalidate the spreadsheets query to refetch the list
+      await queryClient.invalidateQueries({
+        queryKey: ["spreadsheets", projectId],
+      });
+    } catch (error) {
+      console.error("Error deleting spreadsheet:", error);
+    }
+  };
+
   return (
     <div className="flex h-screen flex-1">
       {/* Left Panel - Spreadsheet View */}
@@ -264,6 +296,7 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
               selectedSpreadsheet={connectedSheet}
               onSpreadsheetChange={handleSpreadsheetChange}
               onAddSpreadsheet={handleAddSpreadsheet}
+              onDeleteSpreadsheet={handleDeleteSpreadsheet}
             />
             <div className="h-full w-full">
               {connectedSheet && (
