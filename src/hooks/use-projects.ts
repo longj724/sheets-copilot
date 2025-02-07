@@ -80,7 +80,7 @@ export function useUpdateProject() {
 
       return response.json() as Promise<Project>;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project updated");
     },

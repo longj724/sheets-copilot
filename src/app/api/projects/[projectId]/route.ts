@@ -6,25 +6,25 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const updateProjectSchema = z.object({
-  projectId: z.string().min(1),
   name: z.string().min(1),
 });
 
 export async function PATCH(
-  req: Request
+  req: Request,
+  { params }: { params: { projectId: string } }
 ) {
   try {
-
-    // Check authentication
     const { userId } = await auth();
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json() as z.infer<typeof updateProjectSchema>;
-    const validatedData = updateProjectSchema.parse(body);
+    const  { projectId }= params;
 
-    // Update project
+    const body = await req.json() as z.infer<typeof updateProjectSchema>;
+
+    console.log("body", body);
+
     const updatedProject = await db
       .update(projects)
       .set({ 
@@ -33,7 +33,7 @@ export async function PATCH(
       })
       .where(
         and(
-          eq(projects.id, validatedData.projectId),
+          eq(projects.id, projectId),
           eq(projects.userId, userId)
         )
       )
