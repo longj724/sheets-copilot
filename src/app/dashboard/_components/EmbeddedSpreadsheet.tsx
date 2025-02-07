@@ -1,41 +1,58 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Skeleton } from "~/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 interface EmbeddedSpreadsheetProps {
   spreadsheetId: string;
   height?: string;
 }
 
-export function EmbeddedSpreadsheet({
+export const EmbeddedSpreadsheet = ({
   spreadsheetId,
   height = "100%",
-}: EmbeddedSpreadsheetProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+}: EmbeddedSpreadsheetProps) => {
+  // Fetch access token for embedding
+  const { data: tokenData, isLoading } = useQuery({
+    queryKey: ["google-tokens"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth/google/tokens");
+      const data = (await response.json()) as {
+        hasValidTokens: boolean;
+        tokens: { accessToken: string } | null;
+      };
+      return data;
+    },
+  });
 
-  useEffect(() => {
-    const loadSpreadsheet = () => {
-      if (!containerRef.current) return;
+  console.log("tokenData", tokenData);
 
-      const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit?embedded=true`;
-      const iframe = document.createElement("iframe");
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p>Loading spreadsheet...</p>
+      </div>
+    );
+  }
 
-      iframe.src = spreadsheetUrl;
-      iframe.style.width = "100%";
-      iframe.style.height = height;
-      iframe.style.border = "none";
+  if (!tokenData?.hasValidTokens || !tokenData.tokens) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p>Unable to load spreadsheet. Please check authentication.</p>
+      </div>
+    );
+  }
 
-      containerRef.current.innerHTML = "";
-      containerRef.current.appendChild(iframe);
-    };
-
-    loadSpreadsheet();
-  }, [spreadsheetId, height]);
+  // Include the access token in the URL
+  const embedUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit?usp=sharing&embedded=true&access_token=${tokenData.tokens.accessToken}`;
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height }}>
-      <Skeleton className="h-full w-full" />
+    <div className="h-full w-full">
+      <iframe
+        src={embedUrl}
+        className="h-full w-full border-0"
+        style={{ height }}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      />
     </div>
   );
-}
+};

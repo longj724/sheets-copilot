@@ -3,11 +3,13 @@
 // External Dependencies
 import React, { useState, useEffect } from "react";
 import { Table, ArrowRight, Loader2 } from "lucide-react";
-import { EmbeddedSpreadsheet } from "./EmbeddedSpreadsheet";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+
+// Internal Dependencies
 import { useSpreadsheet } from "~/hooks/use-spreadsheet";
 import type { SpreadsheetResponse } from "~/app/api/projects/[projectId]/spreadsheets/route";
 import { SpreadsheetSelector } from "./SpreadsheetSelector";
-import { useQueryClient } from "@tanstack/react-query";
+import { EmbeddedSpreadsheet } from "./EmbeddedSpreadsheet";
 
 interface MainContentProps {
   projectId?: string;
@@ -75,6 +77,11 @@ interface GoogleApi {
   load: (api: string, callback: () => void) => void;
 }
 
+interface TokenData {
+  hasValidTokens: boolean;
+  tokens: GoogleAuthSuccessEvent["tokens"] | null;
+}
+
 declare global {
   interface Window {
     gapi: GoogleApi;
@@ -104,9 +111,33 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
 
   const queryClient = useQueryClient();
 
+  // Update the token query with proper typing
+  const { data: tokenData } = useQuery<TokenData>({
+    queryKey: ["google-tokens"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth/google/tokens");
+      const data = (await response.json()) as TokenData;
+      return data;
+    },
+  });
+
+  // Update the API key fetch with proper typing
+  useEffect(() => {
+    const fetchApiKey = async () => {
+      const response = await fetch("/api/projects/google-picker");
+      const data = (await response.json()) as { apiKey: string };
+      setApiKey(data.apiKey);
+    };
+    void fetchApiKey();
+  }, []);
+
+  // Update the spreadsheet selection with proper type checking
   useEffect(() => {
     if (spreadsheets.length > 0 && !connectedSheet) {
-      setConnectedSheet(spreadsheets[0]);
+      const firstSheet = spreadsheets[0];
+      if (firstSheet) {
+        setConnectedSheet(firstSheet);
+      }
     }
   }, [spreadsheets, connectedSheet]);
 
@@ -120,15 +151,6 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
       });
     };
     document.body.appendChild(script);
-  }, []);
-
-  useEffect(() => {
-    const fetchApiKey = async () => {
-      const response = await fetch("/api/projects/google-picker");
-      const data = await response.json();
-      setApiKey(data.apiKey);
-    };
-    void fetchApiKey();
   }, []);
 
   const createPicker = (tokens: GoogleAuthSuccessEvent["tokens"]) => {
@@ -159,6 +181,15 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
   const handleConnectSheet = async () => {
     try {
       setIsConnecting(true);
+
+      // Check if we have valid tokens first
+      if (tokenData?.hasValidTokens && tokenData.tokens) {
+        // If we have valid tokens, create picker directly
+        createPicker(tokenData.tokens);
+        return;
+      }
+
+      // If no valid tokens, proceed with auth flow
       const response = await fetch("/api/auth/google");
       const data = (await response.json()) as GoogleAuthResponse;
 
@@ -212,6 +243,7 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
     void handleConnectSheet();
   };
 
+  // Update the save spreadsheet handler with proper typing
   const handleSaveSpreadsheet = async (
     sheet: GoogleSheet,
     tokens: GoogleAuthSuccessEvent["tokens"],
@@ -246,7 +278,7 @@ const MainContent: React.FC<MainContentProps> = ({ projectId }) => {
         throw new Error("Failed to save spreadsheet");
       }
 
-      const savedSpreadsheet = await response.json();
+      const savedSpreadsheet = (await response.json()) as SpreadsheetResponse;
       setConnectedSheet(savedSpreadsheet);
       setAuthTokens(null);
     } catch (error) {

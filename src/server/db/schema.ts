@@ -1,9 +1,10 @@
 // External Dependencies
 import { relations } from "drizzle-orm";
 import {
+  bigint,
   pgTable,
-  timestamp,
   text,
+  timestamp,
 } from "drizzle-orm/pg-core";
 
 
@@ -37,3 +38,16 @@ export const projectSpreadsheetsRelations = relations(projectSpreadsheets, ({ on
     references: [projects.id],
   }),
 }));
+
+export const googleTokens = pgTable("google_token", {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().unique(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiryDate: bigint("expiry_date", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Add relations type
+export type GoogleTokens = typeof googleTokens.$inferSelect;

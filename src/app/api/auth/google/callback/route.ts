@@ -1,5 +1,11 @@
+// External Dependencies
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { auth } from "@clerk/nextjs/server";
+
+// Internal Dependencies
+import { db } from "~/server/db";
+import { googleTokens } from "~/server/db/schema";
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -16,8 +22,35 @@ export async function GET(request: Request) {
   }
 
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
     // Exchange the code for tokens
     const { tokens } = await oauth2Client.getToken(code);
+
+    // Save or update tokens in the database
+    if (tokens.expiry_date) {
+      await db
+        .insert(googleTokens)
+        .values({
+          userId: userId,
+          accessToken: tokens.access_token ?? '',
+          refreshToken: tokens.refresh_token ?? null,
+          expiryDate: tokens.expiry_date,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [googleTokens.userId],
+          set: {
+            accessToken: tokens.access_token ?? '',
+            refreshToken: tokens.refresh_token ?? null,
+            expiryDate: tokens.expiry_date,
+            updatedAt: new Date(),
+          },
+        });
+    }
 
     // Return HTML that sends a message to the parent window
     const html = `
@@ -41,7 +74,7 @@ export async function GET(request: Request) {
       headers: { 'Content-Type': 'text/html' },
     });
   } catch (error) {
-    console.error('Error in Google auth callback:', error);
-    return NextResponse.json({ error: 'Failed to authenticate with Google' }, { status: 500 });
+    console.error("Error in callback:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

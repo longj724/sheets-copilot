@@ -1,0 +1,1 @@
+ALTER TABLE "google_token" ALTER COLUMN "expiry_date" SET DATA TYPE integer;
