@@ -1,9 +1,12 @@
+// External Dependencies
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { db } from "~/server/db";
-import { projects } from "~/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+
+// Internal Dependencies
+import { db } from "~/server/db";
+import { projects } from "~/server/db/schema";
 
 const updateProjectSchema = z.object({
   name: z.string().min(1),
@@ -22,8 +25,6 @@ export async function PATCH(
     const  { projectId }= params;
 
     const body = await req.json() as z.infer<typeof updateProjectSchema>;
-
-    console.log("body", body);
 
     const updatedProject = await db
       .update(projects)
@@ -51,6 +52,34 @@ export async function PATCH(
     }
 
     console.error("[PROJECT_PATCH]", error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  params: { projectId: string }
+) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const { projectId } = params
+
+    await db
+      .delete(projects)
+      .where(
+        and(
+          eq(projects.id, projectId),
+          eq(projects.userId, userId)
+        )
+      );
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error("[PROJECT_DELETE]", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
 } 

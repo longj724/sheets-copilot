@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   Pencil,
   Check,
+  Trash2,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
@@ -19,6 +20,7 @@ import {
   useProjects,
   useCreateProject,
   useUpdateProject,
+  useDeleteProject,
 } from "~/hooks/use-projects";
 import { cn } from "~/lib/utils";
 
@@ -37,6 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
 
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
+  const deleteProject = useDeleteProject();
 
   const handleCreateProject = () => {
     createProject.mutate();
@@ -55,6 +58,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       });
     }
     setEditingId(null);
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    await deleteProject.mutateAsync(projectId);
+    if (params?.["project-id"] === projectId) {
+      router.push("/dashboard");
+    }
   };
 
   return (
@@ -86,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
                 variant={
                   params?.["project-id"] === project.id ? "secondary" : "ghost"
                 }
-                className="w-full justify-start"
+                className="w-[72%] justify-start"
               >
                 <LayoutDashboard className="h-4 w-4" />
                 {!isCollapsed && (
@@ -106,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
                             setEditingId(null);
                           }
                         }}
-                        className="ml-2 h-6"
+                        className="ml-2 h-6 w-[72%]"
                         autoFocus
                       />
                     ) : (
@@ -118,14 +128,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
                 )}
               </Button>
               {!isCollapsed && editingId !== project.id && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 hidden h-8 w-8 group-hover:flex"
-                  onClick={() => startEditing(project)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                <div className="absolute right-0 hidden space-x-1 group-hover:flex">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => startEditing(project)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => void handleDeleteProject(project.id)}
+                    disabled={deleteProject.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
               {!isCollapsed && editingId === project.id && (
                 <Button
