@@ -72,7 +72,7 @@ export const SpreadsheetSelector: React.FC<SpreadsheetSelectorProps> = ({
               <AlertDialogTitle>Delete Spreadsheet</AlertDialogTitle>
               <AlertDialogDescription>
                 Are you sure you want to remove this spreadsheet? This will only
-                remove the connection and won't affect your Google Sheet.
+                remove the connection and won&apos;t affect your Google Sheet.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
